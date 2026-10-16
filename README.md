@@ -1,81 +1,81 @@
-# 🌌 Antigravity Token
+# Antigravity Token
 
-<p align="center">
-  <b>Google Antigravity 优雅的独立桌面 Token 用量看板与托盘小部件</b>
-  <br>
-  <i>采用 OpenAI Codex 极简精美设计风格 · 随官方客户端无感启动 · 零开机自启</i>
-</p>
-
-<p align="center">
-  <img src="https://img.shields.io/badge/Python-3.8+-3776AB?logo=python&logoColor=white" alt="Python Version">
-  <img src="https://img.shields.io/badge/Platform-Windows%2010%20%7C%2011-0078D6?logo=windows&logoColor=white" alt="Platform">
-  <img src="https://img.shields.io/badge/Style-OpenAI%20Codex-00A67E" alt="Style">
-  <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License">
-</p>
+Antigravity Token 是一个专为 Google Antigravity 客户端设计的桌面用量统计工具与系统托盘小部件。该工具通过解析本地会话日志，提供类似 OpenAI Codex 风格的 Token 消耗看板与活跃度矩阵，并与官方客户端实现无感联动启动。
 
 ---
 
-## ✨ 核心特性
+## 功能特性
 
-- 💎 **OpenAI Codex 级精美看板**：
-  - **5 项核心用量指标**：历史总消耗、今日消耗、单日使用峰值、活跃天数、日均消耗。
-  - **28 周高密度热力图**：类 GitHub / Codex 提交矩阵，悬停感知边缘自适应防遮挡气泡。
-  - **日用量走势与累计增长曲线**：双图表直观呈现消耗趋势。
-- 🌟 **原生右下角小部件体验**：
-  - 任务栏托盘常驻蓝粉渐变星芒图标，悬停即可预览今日与历史 Token 总数。
-  - 点击呼出 680×680 悬浮看板，**点击窗口外部任意位置自动关闭**（防打扰）。
-- 🚀 **与 Antigravity App 完美联动**：
-  - **零开机自启（0 Boot Autorun）**：不修改 Windows 开机自启文件夹、不添加任何注册表启动项、不常驻计划任务。
-  - **纯随应用启动**：平时静默，仅当你从「开始菜单」或「桌面」主动打开 Antigravity 时，托盘小部件随同唤起。
-- 🛡️ **绿色非侵入 & 一键还原**：
-  - 本地离线解析 Antigravity 官方日志，不修改任何官方程序文件。
-  - 自带 `uninstall.bat`，随时一键还原官方原始启动链路。
-
----
-
-## 📦 使用方法
-
-### 方法一：下载后一键运行（推荐普通用户）
-
-1. 点击仓库右上角的 **Code -> Download ZIP**（或使用 `git clone`）将本项目下载到电脑任意文件夹并解压。
-2. 确保电脑已安装 Python 3.8+ 并已勾选添加到环境变量（PATH）。
-3. **鼠标双击运行 `install.bat`**。
-   * 脚本会自动安装所需依赖（`pystray`, `pillow`）。
-   * 自动将 Antigravity 的开始菜单与桌面快捷方式配置为静默联动启动。
-4. **大功告成！** 之后你只需像平时一样从【开始菜单】或【桌面】打开 Antigravity，右下角就会自动伴随出现蓝粉星芒用量看板！
+- **多维用量分析**：
+  - 核心指标统计：展示历史总 Token、今日消耗、单日使用峰值、累计活跃天数及日均消耗。
+  - 活跃度热力图：提供连续 28 周的日均活跃矩阵，支持鼠标悬停查看每日详细输入、输出及对话轮次。
+  - 消耗趋势图表：可视化展示近期 Token 日消耗与累计增长曲线。
+- **系统托盘集成**：
+  - 常驻 Windows 任务栏系统托盘，鼠标悬停即可快速预览当前用量摘要。
+  - 单击托盘图标呼出悬浮看板，窗口失焦（点击外部区域）时自动隐藏/关闭。
+- **生命周期联动**：
+  - **无开机自启**：本工具不修改系统启动项（`shell:startup`）、不写入注册表自启键值、不注册系统后台服务。
+  - **应用伴生启动**：通过代理快捷方式，仅在用户主动运行 Antigravity 客户端时同步拉起托盘服务。
+- **非侵入式设计**：
+  - 仅读取本地公开日志文件（`transcript.jsonl`），不修改 Antigravity 的任何二进制文件或程序配置。
+  - 提供完整的一键还原脚本，可随时将快捷方式恢复至初始状态。
 
 ---
 
-### 方法二：复制给 AI Agent 直接安装（推荐 AI 助手重度用户）
+## 系统要求
 
-如果你正在使用 Antigravity、Cursor、Windsurf、Claude Code 或其他 AI 编程助手，**直接复制以下 Prompt 发送给 Agent**，Agent 会自动为你全自动配置完毕：
+- Windows 10 / Windows 11
+- Python 3.8 或更高版本（需勾选添加至环境变量 PATH）
+- Google Antigravity 客户端
 
-```markdown
-请帮我安装并配置 Antigravity Token 看板工具：
-1. 运行命令克隆仓库：
+---
+
+## 安装与配置
+
+### 方式一：手动下载并运行安装脚本
+
+1. 将本项目下载或克隆至本地任意目录：
+   ```bash
+   git clone https://github.com/Hanako-777/Antigravity-Token.git
+   ```
+2. 进入项目根目录，双击运行 `install.bat`：
+   - 脚本将自动安装所需的 Python 依赖库（`pystray`、`pillow`）。
+   - 脚本将更新开始菜单与桌面上的 Antigravity 快捷方式，绑定静默联动启动器。
+3. 从开始菜单或桌面正常启动 Antigravity 客户端，托盘图标将随之启动。
+
+### 方式二：通过 AI Agent 自动安装
+
+在 Antigravity、Cursor、Windsurf 等支持终端执行的 AI 编程助手对话框中，发送以下 Prompt：
+
+```text
+请帮我安装 Antigravity Token 工具：
+1. 执行命令将仓库克隆至用户目录：
    git clone https://github.com/Hanako-777/Antigravity-Token.git "%USERPROFILE%\Antigravity-Token"
-2. 进入目录并运行一键安装脚本：
+2. 运行一键安装脚本完成环境与快捷方式配置：
    cmd /c "%USERPROFILE%\Antigravity-Token\install.bat"
-3. 安装完成后验证开始菜单与桌面快捷方式是否已绑定。
+3. 检查开始菜单与桌面 Antigravity 快捷方式是否配置成功。
 ```
 
 ---
 
-## 🔄 卸载与还原
+## 卸载与还原
 
-如果你想恢复为官方原本的启动方式，只需：
-- 双击运行项目目录下的 **`uninstall.bat`**。
-- 快捷方式将瞬间恢复为官方原版，同时关闭托盘进程，电脑内不留任何残留。
+如需还原系统设置并移除联动，请在项目根目录下运行 `uninstall.bat`：
 
----
-
-## 🛠️ 技术原理
-
-- **启动代理模式**：通过 VBS 包装脚本代理原快捷方式，在启动官方 `Antigravity.exe` 的同时静默检测并唤醒托盘 Python 守护，实现 0 秒延迟无感知并发启动。
-- **独立 HUD 容器**：利用 Edge Application 模式构建无边框轻量级悬浮窗口，配合工作区边缘计算精准停靠在任务栏托盘上方。
+- 自动终止正在运行的托盘进程。
+- 将开始菜单和桌面的 Antigravity 快捷方式恢复为指向官方原版可执行文件。
+- 不会在系统中残留任何后台服务或注册表项。
 
 ---
 
-## 📄 开源许可
+## 技术实现简述
 
-本项目基于 [MIT License](LICENSE) 开源协议，欢迎 Star ⭐ 与提 PR！
+1. **启动调度**：`install.bat` 基于当前系统的 Python 运行时及 Antigravity 安装路径生成 `launch_antigravity.vbs`，通过 Windows Script Host 以前台无窗口（WindowStyle=0）方式唤起 Python 托盘脚本，并直接启动主客户端。
+2. **轻量看板**：基于 Microsoft Edge 应用程序模式（`--app` 参数）渲染独立的无边框悬浮界面，结合 Windows 工作区 API（`SPI_GETWORKAREA`）动态计算坐标，精准吸附于托盘区域上方。
+3. **数据解析**：后台线程按需扫描用户目录下的 `~/.gemini/antigravity/brain/*/transcript.jsonl` 记录，聚合统计模型调用产生的 token 指标。
+
+---
+
+## 开源协议
+
+本项目采用 [MIT 许可证](LICENSE)。
