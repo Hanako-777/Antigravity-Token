@@ -1,0 +1,16 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Local generated files
+usage_dashboard.html
+launch_antigravity.vbs
+
+# Local Edge App Profile
+.hud_profile/
+
+# Environment & IDE
+.vscode/
+.idea/
+*.lnk
