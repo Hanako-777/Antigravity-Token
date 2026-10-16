@@ -18,7 +18,7 @@ if not os.path.exists(EDGE_PATH):
 HUD_PROFILE = os.path.join(APP_DIR, ".hud_profile")
 
 WIN_WIDTH = 680
-WIN_HEIGHT = 680
+WIN_HEIGHT = 740
 
 def get_bottom_right_position(win_w=WIN_WIDTH, win_h=WIN_HEIGHT):
     try:

@@ -1,13 +1,89 @@
+import base64
 import glob
 import json
 import os
 import sys
+import urllib.request
 import webbrowser
 from datetime import datetime, timedelta
 from collections import defaultdict
 
 APP_DIR = os.path.dirname(os.path.abspath(__file__))
 DASHBOARD_HTML = os.path.join(APP_DIR, "usage_dashboard.html")
+
+def get_user_profile():
+    creds_path = os.path.expanduser(r"~\.gemini\oauth_creds.json")
+    user_name = ""
+    user_email = ""
+    avatar_url = ""
+
+    if os.path.exists(creds_path):
+        try:
+            with open(creds_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            id_token = data.get("id_token", "")
+            if id_token and "." in id_token:
+                parts = id_token.split(".")
+                if len(parts) >= 2:
+                    payload_b64 = parts[1]
+                    payload_b64 += "=" * (-len(payload_b64) % 4)
+                    payload = json.loads(base64.urlsafe_b64decode(payload_b64).decode("utf-8"))
+                    user_name = payload.get("name") or ""
+                    user_email = payload.get("email") or ""
+                    avatar_url = payload.get("picture") or ""
+        except Exception:
+            pass
+
+    raw_email = user_email
+    if not user_email:
+        acc_path = os.path.expanduser(r"~\.gemini\google_accounts.json")
+        if os.path.exists(acc_path):
+            try:
+                with open(acc_path, "r", encoding="utf-8") as f:
+                    acc_data = json.load(f)
+                    user_email = acc_data.get("active", "")
+                    raw_email = user_email
+            except Exception:
+                pass
+
+    if not user_name:
+        if user_email and "@" in user_email:
+            user_name = user_email.split("@")[0].capitalize()
+        else:
+            user_name = os.environ.get("USERNAME", "Antigravity User")
+
+    handle = f"@{user_email.split('@')[0]}" if user_email and "@" in user_email else f"@{user_name.lower().replace(' ', '')}"
+
+    avatar_b64 = ""
+    if avatar_url:
+        if "=s96-c" in avatar_url:
+            avatar_url = avatar_url.replace("=s96-c", "=s192-c")
+        cache_file = os.path.join(APP_DIR, ".user_avatar.cache")
+        try:
+            if os.path.exists(cache_file) and (datetime.now().timestamp() - os.path.getmtime(cache_file) < 86400 * 7):
+                with open(cache_file, "r", encoding="utf-8") as cf:
+                    avatar_b64 = cf.read().strip()
+            else:
+                req = urllib.request.Request(avatar_url, headers={"User-Agent": "Mozilla/5.0"})
+                with urllib.request.urlopen(req, timeout=3) as resp:
+                    raw_bytes = resp.read()
+                    mime = resp.headers.get_content_type() or "image/png"
+                    avatar_b64 = f"data:{mime};base64,{base64.b64encode(raw_bytes).decode('utf-8')}"
+                    with open(cache_file, "w", encoding="utf-8") as cf:
+                        cf.write(avatar_b64)
+        except Exception:
+            pass
+
+    initial = user_name[0].upper() if user_name else "A"
+    return {
+        "name": user_name,
+        "handle": handle,
+        "email": raw_email or "Local User",
+        "avatar_b64": avatar_b64,
+        "avatar_url": avatar_url,
+        "initial": initial
+    }
+
 
 def analyze_usage():
     brain_dir = os.path.expanduser(r"~\.gemini\antigravity\brain")
@@ -109,8 +185,14 @@ def build_codex_style_html(daily, total):
     active_days_count = len([d for d, item in daily.items() if (item["input"] + item["output"] > 0 or item["turns"] > 0)])
     avg_per_active_day = int(grand_total_tokens / active_days_count) if active_days_count > 0 else 0
 
-    # Current user
-    current_user = os.environ.get("USERNAME", "Antigravity User")
+    # User profile (Codex style)
+    profile = get_user_profile()
+    avatar_src = profile["avatar_b64"] or profile["avatar_url"]
+    if avatar_src:
+        avatar_html = f'''<img class="avatar-img" src="{avatar_src}" alt="{profile['name']}" onerror="this.style.display=\\'none\\'; this.nextElementSibling.style.display=\\'flex\\';">
+                <div class="avatar-fallback" style="display:none;">{profile['initial']}</div>'''
+    else:
+        avatar_html = f'''<div class="avatar-fallback">{profile['initial']}</div>'''
 
     # Chart datasets
     chart_dates = []
@@ -317,6 +399,62 @@ def build_codex_style_html(daily, total):
             fill: none;
             stroke-linecap: round;
             stroke-linejoin: round;
+        }}
+
+        /* User Profile Hero (Codex Style) */
+        .profile-section {{
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            margin: 4px 0 16px;
+        }}
+
+        .avatar-wrap {{
+            position: relative;
+            width: 72px;
+            height: 72px;
+            margin-bottom: 8px;
+        }}
+
+        .avatar-img {{
+            width: 72px;
+            height: 72px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid var(--border-color);
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
+            display: block;
+        }}
+
+        .avatar-fallback {{
+            width: 72px;
+            height: 72px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #2563eb, #ec4899);
+            color: #ffffff;
+            font-size: 28px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 14px rgba(37, 99, 235, 0.25);
+            border: 2px solid var(--border-color);
+        }}
+
+        .profile-name {{
+            font-size: 19px;
+            font-weight: 650;
+            color: var(--text-heading);
+            line-height: 1.25;
+            letter-spacing: -0.01em;
+        }}
+
+        .profile-handle {{
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-top: 3px;
+            font-family: inherit;
         }}
 
         /* Codex 5-Metrics Hero Bar */
@@ -749,10 +887,6 @@ def build_codex_style_html(daily, total):
                 <div class="brand-name">Antigravity Token</div>
             </div>
             <div class="nav-tools">
-                <span class="user-pill" title="{current_user}">
-                    <svg class="svg-icon" style="width:12px;height:12px;" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-                    {current_user}
-                </span>
                 <button class="icon-btn" id="themeToggle" title="切换暗黑/明亮主题">
                     <svg id="themeIcon" class="svg-icon" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
                 </button>
@@ -761,6 +895,15 @@ def build_codex_style_html(daily, total):
                 </button>
             </div>
         </header>
+
+        <!-- User Profile Hero (Codex Style) -->
+        <div class="profile-section">
+            <div class="avatar-wrap">
+                {avatar_html}
+            </div>
+            <div class="profile-name">{profile['name']}</div>
+            <div class="profile-handle" title="{profile['email']}">{profile['handle']}</div>
+        </div>
 
         <!-- Codex 5-Metrics Hero Bar -->
         <section class="codex-bar">
