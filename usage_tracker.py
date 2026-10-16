@@ -1319,6 +1319,67 @@ def build_codex_style_html(daily, total):
             }});
         }});
 
+        function getCustomHtmlTooltipHandler() {{
+            return function(context) {{
+                const tooltipEl = document.getElementById('tooltip');
+                const {{chart, tooltip}} = context;
+
+                if (!tooltip || tooltip.opacity === 0) {{
+                    tooltipEl.style.display = 'none';
+                    return;
+                }}
+
+                if (tooltip.body) {{
+                    const titleLines = tooltip.title || [];
+                    const dateStr = titleLines[0] || '';
+                    
+                    let innerHtml = `<div style="font-weight:650;font-size:12px;margin-bottom:6px;border-bottom:1px solid rgba(255,255,255,0.15);padding-bottom:3px;color:#ffffff;">${{dateStr}}</div>`;
+                    
+                    let totalTokens = 0;
+                    const items = [];
+                    (tooltip.dataPoints || []).forEach(dp => {{
+                        const val = dp.parsed.y || 0;
+                        totalTokens += val;
+                        const fullLabel = dp.dataset.label || '';
+                        const cleanLabel = fullLabel.split(' ')[0] || fullLabel;
+                        items.push({{
+                            label: cleanLabel + ':',
+                            color: dp.dataset.backgroundColor || '#38bdf8',
+                            val: val.toLocaleString()
+                        }});
+                    }});
+
+                    if (items.length > 1) {{
+                        innerHtml += `<div style="display:flex;justify-content:space-between;gap:22px;font-weight:600;margin-bottom:5px;color:#38bdf8;"><span>总消耗:</span><span style="font-family:ui-monospace,SFMono-Regular,Consolas,monospace;">${{totalTokens.toLocaleString()}}</span></div>`;
+                    }}
+
+                    items.forEach(it => {{
+                        innerHtml += `<div style="display:flex;justify-content:space-between;gap:22px;color:rgba(255,255,255,0.75);font-size:11px;margin-bottom:2px;"><span><span style="display:inline-block;width:7px;height:7px;border-radius:2px;background:${{it.color}};margin-right:6px;vertical-align:middle;"></span>${{it.label}}</span><span style="color:#ffffff;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-weight:500;">${{it.val}}</span></div>`;
+                    }});
+
+                    tooltipEl.innerHTML = innerHtml;
+                }}
+
+                const canvasRect = chart.canvas.getBoundingClientRect();
+                const tipW = tooltipEl.offsetWidth || 190;
+                const tipH = tooltipEl.offsetHeight || 110;
+                const clientW = document.documentElement.clientWidth || window.innerWidth;
+
+                let x = canvasRect.left + tooltip.caretX + 14;
+                if (x + tipW > clientW - 14) {{
+                    x = canvasRect.left + tooltip.caretX - tipW - 14;
+                }}
+                if (x < 10) x = 10;
+
+                let y = canvasRect.top + tooltip.caretY - tipH / 2;
+                if (y < 10) y = 10;
+
+                tooltipEl.style.display = 'block';
+                tooltipEl.style.left = x + 'px';
+                tooltipEl.style.top = y + 'px';
+            }};
+        }}
+
         function renderAltChart(mode) {{
             const isDark = document.body.getAttribute('data-theme') === 'dark';
             const gridColor = isDark ? '#1e293b' : '#f1f5f9';
@@ -1353,7 +1414,13 @@ def build_codex_style_html(daily, total):
                         x: {{ grid: {{ display: false }}, ticks: {{ color: tickColor, font: {{ size: 10 }} }} }},
                         y: {{ grid: {{ color: gridColor }}, ticks: {{ color: tickColor, font: {{ size: 10 }} }} }}
                     }},
-                    plugins: {{ legend: {{ display: false }} }}
+                    plugins: {{
+                        legend: {{ display: false }},
+                        tooltip: {{
+                            enabled: false,
+                            external: getCustomHtmlTooltipHandler()
+                        }}
+                    }}
                 }}
             }} : {{
                 type: 'line',
@@ -1390,7 +1457,13 @@ def build_codex_style_html(daily, total):
                         x: {{ grid: {{ display: false }}, ticks: {{ color: tickColor, font: {{ size: 10 }} }} }},
                         y: {{ grid: {{ color: gridColor }}, ticks: {{ color: tickColor, font: {{ size: 10 }} }} }}
                     }},
-                    plugins: {{ legend: {{ display: false }} }}
+                    plugins: {{
+                        legend: {{ display: false }},
+                        tooltip: {{
+                            enabled: false,
+                            external: getCustomHtmlTooltipHandler()
+                        }}
+                    }}
                 }}
             }};
 
@@ -1474,9 +1547,8 @@ def build_codex_style_html(daily, total):
                         plugins: {{
                             legend: {{ labels: {{ color: tickColor, font: {{ size: 11.5, weight: '500' }} }} }},
                             tooltip: {{
-                                callbacks: {{
-                                    label: function(c) {{ return c.dataset.label + ': ' + c.parsed.y.toLocaleString(); }}
-                                }}
+                                enabled: false,
+                                external: getCustomHtmlTooltipHandler()
                             }}
                         }}
                     }}
@@ -1529,7 +1601,11 @@ def build_codex_style_html(daily, total):
                             }}
                         }},
                         plugins: {{
-                            legend: {{ labels: {{ color: tickColor, font: {{ size: 11.5, weight: '500' }} }} }}
+                            legend: {{ labels: {{ color: tickColor, font: {{ size: 11.5, weight: '500' }} }} }},
+                            tooltip: {{
+                                enabled: false,
+                                external: getCustomHtmlTooltipHandler()
+                            }}
                         }}
                     }}
                 }});
