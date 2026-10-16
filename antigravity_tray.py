@@ -96,6 +96,32 @@ def get_tooltip_text():
     except Exception:
         return "Antigravity Token (点击查看用量)"
 
+def enforce_window_position():
+    def _worker():
+        for _ in range(30):
+            time.sleep(0.1)
+            found = False
+            def enum_proc(hwnd, lParam):
+                nonlocal found
+                if ctypes.windll.user32.IsWindowVisible(hwnd):
+                    length = ctypes.windll.user32.GetWindowTextLengthW(hwnd)
+                    if length > 0:
+                        buff = ctypes.create_unicode_buffer(length + 1)
+                        ctypes.windll.user32.GetWindowTextW(hwnd, buff, length + 1)
+                        if "Antigravity Token" in buff.value:
+                            pos_x, pos_y = get_bottom_right_position(WIN_WIDTH, WIN_HEIGHT)
+                            # SWP_NOZORDER (0x0004) | SWP_SHOWWINDOW (0x0040)
+                            ctypes.windll.user32.SetWindowPos(hwnd, 0, pos_x, pos_y, WIN_WIDTH, WIN_HEIGHT, 0x0044)
+                            found = True
+                            return False
+                return True
+
+            WNDENUMPROC = ctypes.WINFUNCTYPE(ctypes.c_bool, ctypes.c_void_p, ctypes.c_void_p)
+            ctypes.windll.user32.EnumWindows(WNDENUMPROC(enum_proc), 0)
+            if found:
+                break
+    threading.Thread(target=_worker, daemon=True).start()
+
 def open_dashboard():
     try:
         daily, total = usage_tracker.analyze_usage()
@@ -103,16 +129,18 @@ def open_dashboard():
         file_url = f"file:///{html_file.replace(chr(92), '/')}"
         pos_x, pos_y = get_bottom_right_position(WIN_WIDTH, WIN_HEIGHT)
         
-        # Launch Edge in standalone App mode
+        # Launch dedicated Edge App instance with isolated profile to strictly enforce position & size
         if os.path.exists(EDGE_PATH):
             subprocess.Popen([
                 EDGE_PATH,
                 f"--app={file_url}",
+                f"--user-data-dir={HUD_PROFILE}",
                 f"--window-size={WIN_WIDTH},{WIN_HEIGHT}",
                 f"--window-position={pos_x},{pos_y}",
                 "--no-first-run",
                 "--no-default-browser-check"
             ])
+            enforce_window_position()
         else:
             webbrowser.open(file_url)
     except Exception as e:
