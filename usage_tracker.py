@@ -1252,6 +1252,35 @@ def build_codex_style_html(daily, total):
         const weeksData = {weeks_json};
         const gridContainer = document.getElementById('heatmapGridContainer');
         const tooltip = document.getElementById('tooltip');
+        let globalMouse = {{ clientX: 0, clientY: 0 }};
+        window.addEventListener('mousemove', (e) => {{
+            globalMouse.clientX = e.clientX;
+            globalMouse.clientY = e.clientY;
+        }});
+
+        function updateTooltipPos(ev) {{
+            const clientX = ev && ev.clientX !== undefined ? ev.clientX : globalMouse.clientX;
+            const clientY = ev && ev.clientY !== undefined ? ev.clientY : globalMouse.clientY;
+            const tipW = tooltip.offsetWidth || 190;
+            const tipH = tooltip.offsetHeight || 110;
+            const clientW = document.documentElement.clientWidth || window.innerWidth;
+
+            // Flip to left of cursor if near the right edge!
+            let x = clientX + 14;
+            if (x + tipW > clientW - 14) {{
+                x = clientX - tipW - 14;
+            }}
+            if (x < 10) x = 10;
+
+            // Vertical position: flip downward if near top edge
+            let y = clientY - tipH - 8;
+            if (y < 10) {{
+                y = clientY + 18;
+            }}
+
+            tooltip.style.left = x + 'px';
+            tooltip.style.top = y + 'px';
+        }}
 
         function triggerHeatmapAnimation() {{
             gridContainer.innerHTML = '';
@@ -1273,28 +1302,6 @@ def build_codex_style_html(daily, total):
                     // Diagonal Staggered Ripple Delay from Top-Left to Bottom-Right: (col + row) * 10ms
                     const delayMs = (colIdx + rowIdx) * 10;
                     cell.style.animationDelay = delayMs + 'ms';
-
-                    function updateTooltipPos(ev) {{
-                        const tipW = tooltip.offsetWidth || 185;
-                        const tipH = tooltip.offsetHeight || 110;
-                        const clientW = document.documentElement.clientWidth || window.innerWidth;
-
-                        // Flip to left of cursor if near the right edge!
-                        let x = ev.clientX + 12;
-                        if (x + tipW > clientW - 12) {{
-                            x = ev.clientX - tipW - 12;
-                        }}
-                        if (x < 10) x = 10;
-
-                        // Vertical position: flip downward if near top edge
-                        let y = ev.clientY - tipH - 8;
-                        if (y < 10) {{
-                            y = ev.clientY + 18;
-                        }}
-
-                        tooltip.style.left = x + 'px';
-                        tooltip.style.top = y + 'px';
-                    }}
 
                     cell.addEventListener('mouseenter', (e) => {{
                         tooltip.style.display = 'block';
@@ -1399,23 +1406,8 @@ def build_codex_style_html(daily, total):
                     tooltipEl.innerHTML = innerHtml;
                 }}
 
-                const canvasRect = chart.canvas.getBoundingClientRect();
-                const tipW = tooltipEl.offsetWidth || 190;
-                const tipH = tooltipEl.offsetHeight || 110;
-                const clientW = document.documentElement.clientWidth || window.innerWidth;
-
-                let x = canvasRect.left + tooltip.caretX + 14;
-                if (x + tipW > clientW - 14) {{
-                    x = canvasRect.left + tooltip.caretX - tipW - 14;
-                }}
-                if (x < 10) x = 10;
-
-                let y = canvasRect.top + tooltip.caretY - tipH / 2;
-                if (y < 10) y = 10;
-
                 tooltipEl.style.display = 'block';
-                tooltipEl.style.left = x + 'px';
-                tooltipEl.style.top = y + 'px';
+                updateTooltipPos();
             }};
         }}
 
@@ -1443,7 +1435,7 @@ def build_codex_style_html(daily, total):
                     maintainAspectRatio: false,
                     interaction: {{
                         mode: 'index',
-                        intersect: true
+                        intersect: false
                     }},
                     animation: {{
                         duration: 650,
@@ -1475,7 +1467,7 @@ def build_codex_style_html(daily, total):
                         borderWidth: 2,
                         pointRadius: 4,
                         pointHoverRadius: 7,
-                        pointHitRadius: 10,
+                        pointHitRadius: 25,
                         pointHoverBackgroundColor: '#2563eb',
                         pointHoverBorderColor: '#ffffff',
                         pointHoverBorderWidth: 2
@@ -1485,8 +1477,8 @@ def build_codex_style_html(daily, total):
                     responsive: true,
                     maintainAspectRatio: false,
                     interaction: {{
-                        mode: 'point',
-                        intersect: true
+                        mode: 'index',
+                        intersect: false
                     }},
                     animation: {{
                         duration: 650,
@@ -1562,7 +1554,7 @@ def build_codex_style_html(daily, total):
                         maintainAspectRatio: false,
                         interaction: {{
                             mode: 'index',
-                            intersect: true
+                            intersect: false
                         }},
                         animation: {{
                             duration: 600,
@@ -1607,7 +1599,7 @@ def build_codex_style_html(daily, total):
                             borderWidth: 2.5,
                             pointRadius: 4,
                             pointHoverRadius: 7,
-                            pointHitRadius: 10,
+                            pointHitRadius: 25,
                             pointBackgroundColor: '#2563eb',
                             pointHoverBackgroundColor: '#2563eb',
                             pointHoverBorderColor: '#ffffff',
@@ -1618,8 +1610,8 @@ def build_codex_style_html(daily, total):
                         responsive: true,
                         maintainAspectRatio: false,
                         interaction: {{
-                            mode: 'point',
-                            intersect: true
+                            mode: 'index',
+                            intersect: false
                         }},
                         animation: {{
                             duration: 600,
@@ -1660,13 +1652,25 @@ def build_codex_style_html(daily, total):
 
         renderTrendChart();
 
-        // Instantly hide floating tooltip when mouse leaves chart canvas
+        // Track cursor dynamically and instantly hide floating tooltip when mouse leaves chart canvas
+        ctxTrend.canvas.addEventListener('mousemove', (e) => {{
+            const tip = document.getElementById('tooltip');
+            if (tip && tip.style.display === 'block') {{
+                updateTooltipPos(e);
+            }}
+        }});
         ctxTrend.canvas.addEventListener('mouseleave', () => {{
             const tip = document.getElementById('tooltip');
             if (tip) tip.style.display = 'none';
         }});
         const altCanvasEl = document.getElementById('altActivityChart');
         if (altCanvasEl) {{
+            altCanvasEl.addEventListener('mousemove', (e) => {{
+                const tip = document.getElementById('tooltip');
+                if (tip && tip.style.display === 'block') {{
+                    updateTooltipPos(e);
+                }}
+            }});
             altCanvasEl.addEventListener('mouseleave', () => {{
                 const tip = document.getElementById('tooltip');
                 if (tip) tip.style.display = 'none';
