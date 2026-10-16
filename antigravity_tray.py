@@ -1,5 +1,11 @@
 import os
 import sys
+
+APP_DIR = os.path.dirname(os.path.abspath(__file__))
+if APP_DIR not in sys.path:
+    sys.path.insert(0, APP_DIR)
+os.chdir(APP_DIR)
+
 import threading
 import time
 import subprocess
@@ -9,8 +15,6 @@ import math
 from PIL import Image, ImageDraw
 import pystray
 import usage_tracker
-
-APP_DIR = os.path.dirname(os.path.abspath(__file__))
 EDGE_PATH = r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
 if not os.path.exists(EDGE_PATH):
     EDGE_PATH = r"C:\Program Files\Microsoft\Edge\Application\msedge.exe"
@@ -99,12 +103,11 @@ def open_dashboard():
         file_url = f"file:///{html_file.replace(chr(92), '/')}"
         pos_x, pos_y = get_bottom_right_position(WIN_WIDTH, WIN_HEIGHT)
         
-        # Launch dedicated Edge App instance with custom profile to strictly enforce position & size
+        # Launch Edge in standalone App mode
         if os.path.exists(EDGE_PATH):
             subprocess.Popen([
                 EDGE_PATH,
                 f"--app={file_url}",
-                f"--user-data-dir={HUD_PROFILE}",
                 f"--window-size={WIN_WIDTH},{WIN_HEIGHT}",
                 f"--window-position={pos_x},{pos_y}",
                 "--no-first-run",
@@ -112,10 +115,22 @@ def open_dashboard():
             ])
         else:
             webbrowser.open(file_url)
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"Error opening dashboard: {e}")
 
 def main():
+    # Single-instance enforcement:
+    # If tray is already running, open the dashboard window and exit cleanly!
+    ERROR_ALREADY_EXISTS = 183
+    mutex = ctypes.windll.kernel32.CreateMutexW(None, False, "Global\\AntigravityTokenTrayMutex")
+    last_error = ctypes.windll.kernel32.GetLastError()
+    
+    # If user passed --open or tray already exists, open dashboard immediately
+    auto_open = "--open" in sys.argv or "--now" in sys.argv
+    if last_error == ERROR_ALREADY_EXISTS:
+        open_dashboard()
+        sys.exit(0)
+
     def on_click(icon, item):
         open_dashboard()
 
@@ -132,6 +147,8 @@ def main():
 
     def setup(icon):
         icon.visible = True
+        if auto_open:
+            open_dashboard()
         def update_loop():
             while icon.visible:
                 try:
