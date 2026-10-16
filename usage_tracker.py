@@ -1245,9 +1245,9 @@ def build_codex_style_html(daily, total):
                         let content = `<div style="font-weight:650;font-size:12px;margin-bottom:6px;border-bottom:1px solid rgba(255,255,255,0.15);padding-bottom:3px;">${{item.date}}</div>`;
                         if (item.tokens > 0) {{
                             content += `<div style="display:flex;justify-content:space-between;gap:14px;font-weight:600;margin-bottom:4px;color:#38bdf8;"><span>总消耗:</span><span>${{item.tokens.toLocaleString()}}</span></div>`;
-                            content += `<div style="display:flex;justify-content:space-between;gap:14px;color:#94a3b8;font-size:11px;"><span>未命中输入:</span><span style="color:#f1f5f9;">${{(item.input || 0).toLocaleString()}}</span></div>`;
-                            content += `<div style="display:flex;justify-content:space-between;gap:14px;color:#94a3b8;font-size:11px;"><span>模型输出:</span><span style="color:#f1f5f9;">${{(item.output || 0).toLocaleString()}}</span></div>`;
-                            content += `<div style="display:flex;justify-content:space-between;gap:14px;color:#94a3b8;font-size:11px;"><span>命中缓存:</span><span style="color:#34d399;">${{(item.cache || 0).toLocaleString()}}</span></div>`;
+                            content += `<div style="display:flex;justify-content:space-between;gap:14px;color:#94a3b8;font-size:11px;"><span>未命中输入:</span><span style="color:#60a5fa;">${{(item.input || 0).toLocaleString()}}</span></div>`;
+                            content += `<div style="display:flex;justify-content:space-between;gap:14px;color:#94a3b8;font-size:11px;"><span>命中缓存:</span><span style="color:#a5b4fc;">${{(item.cache || 0).toLocaleString()}}</span></div>`;
+                            content += `<div style="display:flex;justify-content:space-between;gap:14px;color:#94a3b8;font-size:11px;"><span>模型输出:</span><span style="color:#f472b6;">${{(item.output || 0).toLocaleString()}}</span></div>`;
                             content += `<div style="display:flex;justify-content:space-between;gap:14px;color:#94a3b8;font-size:11px;margin-top:4px;border-top:1px dashed rgba(255,255,255,0.1);padding-top:3px;"><span>交互轮次:</span><span style="color:#f1f5f9;">${{item.turns}} 轮</span></div>`;
                         }} else {{
                             content += `<div style="color:#94a3b8;font-size:11px;">无使用记录</div>`;
@@ -1411,13 +1411,13 @@ def build_codex_style_html(daily, total):
                             {{
                                 label: '未命中输入 (Input)',
                                 data: {json.dumps(chart_inputs)},
-                                backgroundColor: '#2563eb',
+                                backgroundColor: '#3b82f6',
                                 borderRadius: 4
                             }},
                             {{
                                 label: '命中缓存 (Cache)',
                                 data: {json.dumps(chart_caches)},
-                                backgroundColor: '#10b981',
+                                backgroundColor: '#6366f1',
                                 borderRadius: 4
                             }},
                             {{
