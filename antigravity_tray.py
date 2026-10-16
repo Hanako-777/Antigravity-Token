@@ -77,10 +77,18 @@ def get_tooltip_text():
     try:
         daily, total = usage_tracker.analyze_usage()
         today_str = time.strftime("%Y-%m-%d")
-        today_item = daily.get(today_str, {"input": 0, "output": 0, "turns": 0})
-        today_tot = today_item["input"] + today_item["output"]
-        grand_tot = total["input"] + total["output"]
-        return f"Antigravity Token\n今日消耗: {usage_tracker.format_tokens(today_tot)} ({today_tot:,})\n历史累计: {usage_tracker.format_tokens(grand_tot)}\n点击打开独立统计看板"
+        today_item = daily.get(today_str, {"input": 0, "output": 0, "cache": 0, "turns": 0})
+        t_inp = today_item.get("input", 0)
+        t_out = today_item.get("output", 0)
+        t_cache = today_item.get("cache", 0)
+        today_tot = t_inp + t_out + t_cache
+        grand_tot = total.get("input", 0) + total.get("output", 0) + total.get("cache", 0)
+        return (
+            f"Antigravity Token\n"
+            f"今日: {usage_tracker.format_tokens(today_tot)} (入:{usage_tracker.format_tokens(t_inp)} 出:{usage_tracker.format_tokens(t_out)} 缓:{usage_tracker.format_tokens(t_cache)})\n"
+            f"历史累计: {usage_tracker.format_tokens(grand_tot)}\n"
+            f"点击打开独立统计看板"
+        )
     except Exception:
         return "Antigravity Token (点击查看用量)"
 

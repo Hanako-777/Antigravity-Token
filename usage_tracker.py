@@ -86,11 +86,47 @@ def get_user_profile():
 
 
 def analyze_usage():
-    brain_dir = os.path.expanduser(r"~\.gemini\antigravity\brain")
-    files = glob.glob(os.path.join(brain_dir, "*", ".system_generated", "logs", "transcript.jsonl"))
-
     daily = defaultdict(lambda: {"input": 0, "output": 0, "cache": 0, "turns": 0})
     total = {"input": 0, "output": 0, "cache": 0, "turns": 0}
+
+    # 1. 优先读取完整同步缓存（由 tokscale/Token Monitor 生成，包含完整的会话历史调用）
+    tokscale_sessions_dir = os.path.expandvars(r"%APPDATA%\tokscale\antigravity-cache\sessions")
+    tokscale_files = glob.glob(os.path.join(tokscale_sessions_dir, "*.jsonl")) if os.path.exists(tokscale_sessions_dir) else []
+
+    if tokscale_files:
+        for f in tokscale_files:
+            try:
+                with open(f, "r", encoding="utf-8") as fp:
+                    for line in fp:
+                        if not line.strip():
+                            continue
+                        try:
+                            data = json.loads(line)
+                            if data.get("type") == "usage":
+                                inp = data.get("input", 0) or 0
+                                out = data.get("output", 0) or 0
+                                cache = data.get("cacheRead", 0) or 0
+                                ts = data.get("timestamp")
+                                date_str = datetime.fromtimestamp(ts / 1000).strftime("%Y-%m-%d") if ts else "Unknown"
+
+                                daily[date_str]["input"] += inp
+                                daily[date_str]["output"] += out
+                                daily[date_str]["cache"] += cache
+                                daily[date_str]["turns"] += 1
+
+                                total["input"] += inp
+                                total["output"] += out
+                                total["cache"] += cache
+                                total["turns"] += 1
+                        except Exception:
+                            pass
+            except Exception:
+                pass
+        return daily, total
+
+    # 2. 原生兜底方案：扫描本地 brain/*/transcript.jsonl 记录
+    brain_dir = os.path.expanduser(r"~\.gemini\antigravity\brain")
+    files = glob.glob(os.path.join(brain_dir, "*", ".system_generated", "logs", "transcript.jsonl"))
 
     for f in files:
         try:
@@ -107,7 +143,7 @@ def analyze_usage():
                         created = data.get("created_at", "")
                         msg_type = data.get("type", "")
 
-                        if inp > 0 or out > 0 or msg_type == "PLANNER_RESPONSE":
+                        if inp > 0 or out > 0 or cache > 0 or msg_type == "PLANNER_RESPONSE":
                             date_str = created[:10] if created else "Unknown"
                             daily[date_str]["input"] += inp
                             daily[date_str]["output"] += out
@@ -127,7 +163,7 @@ def analyze_usage():
 
 def format_tokens(num):
     if num >= 100000000:
-        return f"{num / 100000000:.1f}亿"
+        return f"{num / 100000000:.2f}亿"
     if num >= 10000:
         return f"{num / 10000:.1f}万"
     return f"{num:,}"
@@ -145,10 +181,13 @@ def generate_heatmap_52_weeks(daily):
         for row_idx in range(7):
             d_str = curr.strftime("%Y-%m-%d")
             item = daily.get(d_str, None)
-            tokens = (item["input"] + item["output"]) if item else 0
+            tokens = (item["input"] + item["output"] + item.get("cache", 0)) if item else 0
             current_week.append({
                 "date": d_str,
                 "tokens": tokens,
+                "input": item["input"] if item else 0,
+                "output": item["output"] if item else 0,
+                "cache": item["cache"] if item else 0,
                 "turns": item["turns"] if item else 0,
                 "col": col_idx,
                 "row": row_idx,
@@ -164,14 +203,14 @@ def generate_heatmap_52_weeks(daily):
     return weeks
 
 def build_codex_style_html(daily, total):
-    grand_total_tokens = total["input"] + total["output"]
+    grand_total_tokens = total["input"] + total["output"] + total.get("cache", 0)
     dates = sorted(daily.keys())
     
     # Peak day
     peak_val = 0
     peak_date = "无"
     for d, item in daily.items():
-        tot = item["input"] + item["output"]
+        tot = item["input"] + item["output"] + item.get("cache", 0)
         if tot > peak_val:
             peak_val = tot
             peak_date = d
@@ -179,10 +218,10 @@ def build_codex_style_html(daily, total):
     # Today stats
     today_str = datetime.now().strftime("%Y-%m-%d")
     today_item = daily.get(today_str, {"input": 0, "output": 0, "cache": 0, "turns": 0})
-    today_tokens = today_item["input"] + today_item["output"]
+    today_tokens = today_item["input"] + today_item["output"] + today_item.get("cache", 0)
 
     # Active days
-    active_days_count = len([d for d, item in daily.items() if (item["input"] + item["output"] > 0 or item["turns"] > 0)])
+    active_days_count = len([d for d, item in daily.items() if (item["input"] + item["output"] + item.get("cache", 0) > 0 or item["turns"] > 0)])
     avg_per_active_day = int(grand_total_tokens / active_days_count) if active_days_count > 0 else 0
 
     # User profile (Codex style)
@@ -198,6 +237,7 @@ def build_codex_style_html(daily, total):
     chart_dates = []
     chart_inputs = []
     chart_outputs = []
+    chart_caches = []
     cum_sum = 0
     chart_cumulative = []
 
@@ -205,18 +245,20 @@ def build_codex_style_html(daily, total):
         chart_dates.append(d[5:]) # MM-DD
         chart_inputs.append(daily[d]["input"])
         chart_outputs.append(daily[d]["output"])
-        day_tot = daily[d]["input"] + daily[d]["output"]
+        chart_caches.append(daily[d].get("cache", 0))
+        day_tot = daily[d]["input"] + daily[d]["output"] + daily[d].get("cache", 0)
         cum_sum += day_tot
         chart_cumulative.append(cum_sum)
 
     # Weekly grouped data
-    weeks_map = defaultdict(lambda: {"input": 0, "output": 0, "total": 0})
+    weeks_map = defaultdict(lambda: {"input": 0, "output": 0, "cache": 0, "total": 0})
     for d in dates:
         dt = datetime.strptime(d, "%Y-%m-%d")
         w_str = f"{dt.month}月第{((dt.day - 1) // 7) + 1}周"
-        day_tot = daily[d]["input"] + daily[d]["output"]
+        day_tot = daily[d]["input"] + daily[d]["output"] + daily[d].get("cache", 0)
         weeks_map[w_str]["input"] += daily[d]["input"]
         weeks_map[w_str]["output"] += daily[d]["output"]
+        weeks_map[w_str]["cache"] += daily[d].get("cache", 0)
         weeks_map[w_str]["total"] += day_tot
 
     week_labels = sorted(weeks_map.keys())
@@ -226,7 +268,7 @@ def build_codex_style_html(daily, total):
     table_rows = ""
     for d in reversed(dates):
         item = daily[d]
-        tot = item["input"] + item["output"]
+        tot = item["input"] + item["output"] + item.get("cache", 0)
         is_today_tag = '<span class="today-tag">今天</span>' if d == today_str else ''
         table_rows += f"""
         <tr>
@@ -788,13 +830,15 @@ def build_codex_style_html(daily, total):
             display: none;
             background: #0f172a;
             color: #f8fafc;
-            padding: 7px 11px;
-            border-radius: 6px;
-            font-size: 11px;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 11.5px;
             pointer-events: none;
             z-index: 9999;
-            box-shadow: 0 4px 14px rgba(0,0,0,0.3);
-            white-space: nowrap;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            line-height: 1.5;
+            min-width: 175px;
         }}
 
         /* Responsive View for Medium & Compact Floating Windows */
@@ -1175,8 +1219,8 @@ def build_codex_style_html(daily, total):
                     cell.style.animationDelay = delayMs + 'ms';
 
                     function updateTooltipPos(ev) {{
-                        const tipW = tooltip.offsetWidth || 150;
-                        const tipH = tooltip.offsetHeight || 56;
+                        const tipW = tooltip.offsetWidth || 185;
+                        const tipH = tooltip.offsetHeight || 110;
                         const clientW = document.documentElement.clientWidth || window.innerWidth;
 
                         // Flip to left of cursor if near the right edge!
@@ -1198,7 +1242,17 @@ def build_codex_style_html(daily, total):
 
                     cell.addEventListener('mouseenter', (e) => {{
                         tooltip.style.display = 'block';
-                        tooltip.innerHTML = `<div style="font-weight:600;margin-bottom:2px;">${{item.date}}</div><div>Token 消耗: ${{item.tokens.toLocaleString()}}</div><div>交互轮次: ${{item.turns}} 轮</div>`;
+                        let content = `<div style="font-weight:650;font-size:12px;margin-bottom:6px;border-bottom:1px solid rgba(255,255,255,0.15);padding-bottom:3px;">${{item.date}}</div>`;
+                        if (item.tokens > 0) {{
+                            content += `<div style="display:flex;justify-content:space-between;gap:14px;font-weight:600;margin-bottom:4px;color:#38bdf8;"><span>总消耗:</span><span>${{item.tokens.toLocaleString()}}</span></div>`;
+                            content += `<div style="display:flex;justify-content:space-between;gap:14px;color:#94a3b8;font-size:11px;"><span>未命中输入:</span><span style="color:#f1f5f9;">${{(item.input || 0).toLocaleString()}}</span></div>`;
+                            content += `<div style="display:flex;justify-content:space-between;gap:14px;color:#94a3b8;font-size:11px;"><span>模型输出:</span><span style="color:#f1f5f9;">${{(item.output || 0).toLocaleString()}}</span></div>`;
+                            content += `<div style="display:flex;justify-content:space-between;gap:14px;color:#94a3b8;font-size:11px;"><span>命中缓存:</span><span style="color:#34d399;">${{(item.cache || 0).toLocaleString()}}</span></div>`;
+                            content += `<div style="display:flex;justify-content:space-between;gap:14px;color:#94a3b8;font-size:11px;margin-top:4px;border-top:1px dashed rgba(255,255,255,0.1);padding-top:3px;"><span>交互轮次:</span><span style="color:#f1f5f9;">${{item.turns}} 轮</span></div>`;
+                        }} else {{
+                            content += `<div style="color:#94a3b8;font-size:11px;">无使用记录</div>`;
+                        }}
+                        tooltip.innerHTML = content;
                         updateTooltipPos(e);
                     }});
 
@@ -1355,15 +1409,21 @@ def build_codex_style_html(daily, total):
                         labels: {json.dumps(chart_dates)},
                         datasets: [
                             {{
-                                label: '输入 Token (Prompt)',
+                                label: '未命中输入 (Input)',
                                 data: {json.dumps(chart_inputs)},
                                 backgroundColor: '#2563eb',
                                 borderRadius: 4
                             }},
                             {{
-                                label: '输出 Token (Gen)',
+                                label: '命中缓存 (Cache)',
+                                data: {json.dumps(chart_caches)},
+                                backgroundColor: '#10b981',
+                                borderRadius: 4
+                            }},
+                            {{
+                                label: '模型输出 (Output)',
                                 data: {json.dumps(chart_outputs)},
-                                backgroundColor: '#9333ea',
+                                backgroundColor: '#ec4899',
                                 borderRadius: 4
                             }}
                         ]
