@@ -622,7 +622,7 @@ def build_codex_style_html(daily, total):
         .month-labels-row {{
             display: flex;
             justify-content: space-between;
-            padding: 0 4px 6px 4px;
+            padding: 0 6px 6px 6px;
             font-size: 11px;
             color: var(--text-muted);
             user-select: none;
@@ -637,8 +637,9 @@ def build_codex_style_html(daily, total):
             grid-template-columns: repeat(53, 1fr);
             gap: 4px;
             width: 100%;
-            padding: 2px 0 8px;
+            padding: 4px 6px 8px 6px;
             overflow: hidden !important;
+            box-sizing: border-box;
         }}
 
         .heatmap-col {{
@@ -655,6 +656,7 @@ def build_codex_style_html(daily, total):
             cursor: pointer;
             opacity: 0;
             transform: scale(0.35) translate(-4px, -4px);
+            position: relative;
         }}
 
         /* Diagonal Ripple Wave Keyframes */
@@ -676,7 +678,7 @@ def build_codex_style_html(daily, total):
         .heat-cell:hover {{
             outline: 2px solid var(--brand-blue);
             outline-offset: 1px;
-            z-index: 5;
+            z-index: 10;
         }}
 
         /* Activity Bottom Bar */
@@ -876,6 +878,8 @@ def build_codex_style_html(daily, total):
             .heatmap-grid-scroll {{
                 grid-template-columns: repeat(28, 1fr);
                 gap: 4.5px;
+                padding: 4px 6px 8px 6px;
+                box-sizing: border-box;
             }}
             .heatmap-col:nth-child(-n+25) {{
                 display: none;
