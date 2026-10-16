@@ -1363,7 +1363,7 @@ def build_codex_style_html(daily, total):
                 const tooltipEl = document.getElementById('tooltip');
                 const {{chart, tooltip}} = context;
 
-                if (!tooltip || tooltip.opacity === 0) {{
+                if (!tooltip || tooltip.opacity === 0 || !tooltip.dataPoints || tooltip.dataPoints.length === 0) {{
                     tooltipEl.style.display = 'none';
                     return;
                 }}
@@ -1443,7 +1443,7 @@ def build_codex_style_html(daily, total):
                     maintainAspectRatio: false,
                     interaction: {{
                         mode: 'index',
-                        intersect: false
+                        intersect: true
                     }},
                     animation: {{
                         duration: 650,
@@ -1475,7 +1475,7 @@ def build_codex_style_html(daily, total):
                         borderWidth: 2,
                         pointRadius: 4,
                         pointHoverRadius: 7,
-                        pointHitRadius: 25,
+                        pointHitRadius: 10,
                         pointHoverBackgroundColor: '#2563eb',
                         pointHoverBorderColor: '#ffffff',
                         pointHoverBorderWidth: 2
@@ -1485,8 +1485,8 @@ def build_codex_style_html(daily, total):
                     responsive: true,
                     maintainAspectRatio: false,
                     interaction: {{
-                        mode: 'index',
-                        intersect: false
+                        mode: 'point',
+                        intersect: true
                     }},
                     animation: {{
                         duration: 650,
@@ -1562,7 +1562,7 @@ def build_codex_style_html(daily, total):
                         maintainAspectRatio: false,
                         interaction: {{
                             mode: 'index',
-                            intersect: false
+                            intersect: true
                         }},
                         animation: {{
                             duration: 600,
@@ -1607,7 +1607,7 @@ def build_codex_style_html(daily, total):
                             borderWidth: 2.5,
                             pointRadius: 4,
                             pointHoverRadius: 7,
-                            pointHitRadius: 25,
+                            pointHitRadius: 10,
                             pointBackgroundColor: '#2563eb',
                             pointHoverBackgroundColor: '#2563eb',
                             pointHoverBorderColor: '#ffffff',
@@ -1618,8 +1618,8 @@ def build_codex_style_html(daily, total):
                         responsive: true,
                         maintainAspectRatio: false,
                         interaction: {{
-                            mode: 'index',
-                            intersect: false
+                            mode: 'point',
+                            intersect: true
                         }},
                         animation: {{
                             duration: 600,
@@ -1659,6 +1659,19 @@ def build_codex_style_html(daily, total):
         }}
 
         renderTrendChart();
+
+        // Instantly hide floating tooltip when mouse leaves chart canvas
+        ctxTrend.canvas.addEventListener('mouseleave', () => {{
+            const tip = document.getElementById('tooltip');
+            if (tip) tip.style.display = 'none';
+        }});
+        const altCanvasEl = document.getElementById('altActivityChart');
+        if (altCanvasEl) {{
+            altCanvasEl.addEventListener('mouseleave', () => {{
+                const tip = document.getElementById('tooltip');
+                if (tip) tip.style.display = 'none';
+            }});
+        }}
 
         // Pin Window Toggle (Keep open on blur vs auto-close)
         const pinBtn = document.getElementById('pinToggle');
