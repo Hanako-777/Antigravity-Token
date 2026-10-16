@@ -63,15 +63,14 @@ def create_tray_icon():
     # 100% solid star, NO hollow center
     mask_draw.polygon(points, fill=255)
 
-    # Blue to Pink gradient:
-    # Blue (#2563eb: 37, 99, 235) -> Pink/Rose (#f43f5e / #ec4899: 240, 70, 150)
+    # Light Sky Blue (#38bdf8: 56, 189, 248) -> Pale Pastel Pink (#f472b6: 244, 114, 182)
     grad = Image.new('RGBA', (size, size), (0, 0, 0, 0))
     for y in range(size):
         for x in range(size):
             factor = (x + y) / (2 * size)
-            r = int(37 * (1 - factor) + 240 * factor)
-            g = int(99 * (1 - factor) + 70 * factor)
-            b = int(235 * (1 - factor) + 150 * factor)
+            r = int(56 * (1 - factor) + 244 * factor)
+            g = int(189 * (1 - factor) + 114 * factor)
+            b = int(248 * (1 - factor) + 182 * factor)
             grad.putpixel((x, y), (r, g, b, 255))
     grad.putalpha(mask)
 
