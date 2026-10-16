@@ -11,6 +11,43 @@ from collections import defaultdict
 APP_DIR = os.path.dirname(os.path.abspath(__file__))
 DASHBOARD_HTML = os.path.join(APP_DIR, "usage_dashboard.html")
 
+FAVICON_DATA_URI = (
+    "data:image/png;base64,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"
+)
+
 def get_user_profile():
     creds_path = os.path.expanduser(r"~\.gemini\oauth_creds.json")
     user_name = ""
@@ -290,6 +327,8 @@ def build_codex_style_html(daily, total):
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Antigravity Token</title>
+    <link rel="icon" type="image/png" href="{FAVICON_DATA_URI}">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%2338bdf8'/%3E%3Cstop offset='100%25' stop-color='%23f472b6'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d='M12 2C12 7.5 7.5 12 2 12C7.5 12 12 16.5 12 22C12 16.5 16.5 12 22 12C16.5 12 12 7.5 12 2Z' fill='url(%23g)'/%3E%3C/svg%3E">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {{
