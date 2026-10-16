@@ -843,6 +843,7 @@ def build_codex_style_html(daily, total):
             padding: 9px 12px;
             text-align: left;
             border-bottom: 1px solid var(--border-color);
+            transition: background 0.15s ease, color 0.15s ease;
         }}
 
         th {{
@@ -855,8 +856,32 @@ def build_codex_style_html(daily, total):
             border-top: 1px solid var(--border-color);
         }}
 
-        tr:hover td {{
-            background: rgba(37, 99, 235, 0.02);
+        /* Table row hover highlight: clear, distinct, elegant */
+        tbody tr {{
+            transition: background 0.15s ease;
+        }}
+
+        tbody tr:hover td {{
+            background: rgba(59, 130, 246, 0.09);
+        }}
+
+        [data-theme="dark"] tbody tr:hover td {{
+            background: rgba(56, 189, 248, 0.14);
+        }}
+
+        tbody tr:hover td.col-date {{
+            color: var(--brand-blue);
+            font-weight: 600;
+        }}
+
+        tbody tr:hover td.col-total {{
+            color: var(--brand-blue);
+            font-weight: 600;
+        }}
+
+        /* Right-align numeric columns */
+        th.th-num, td.col-num {{
+            text-align: right;
         }}
 
         .col-date {{ font-weight: 500; color: var(--text-heading); }}
@@ -1209,10 +1234,10 @@ def build_codex_style_html(daily, total):
                         <tr>
                             <th>日期</th>
                             <th>交互轮次</th>
-                            <th>输入 Tokens</th>
-                            <th>输出 Tokens</th>
-                            <th>缓存读取</th>
-                            <th>当日总计 (Tokens)</th>
+                            <th class="th-num">输入 Tokens</th>
+                            <th class="th-num">输出 Tokens</th>
+                            <th class="th-num">缓存读取</th>
+                            <th class="th-num">当日总计 (Tokens)</th>
                         </tr>
                     </thead>
                     <tbody>
