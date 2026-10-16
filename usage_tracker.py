@@ -433,6 +433,16 @@ def build_codex_style_html(daily, total):
             color: var(--text-heading);
         }}
 
+        .icon-btn.active {{
+            background: rgba(59, 130, 246, 0.14);
+            border-color: #3b82f6;
+            color: #3b82f6;
+        }}
+
+        .icon-btn.active svg {{
+            fill: rgba(59, 130, 246, 0.25);
+        }}
+
         .svg-icon {{
             width: 14px;
             height: 14px;
@@ -931,6 +941,9 @@ def build_codex_style_html(daily, total):
                 <div class="brand-name">Antigravity Token</div>
             </div>
             <div class="nav-tools">
+                <button class="icon-btn" id="pinToggle" title="固定窗口 (点击后失焦不关闭)">
+                    <svg id="pinIcon" class="svg-icon" viewBox="0 0 24 24"><line x1="12" y1="17" x2="12" y2="22"></line><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a1 1 0 0 0 0-2H8a1 1 0 0 0 0 2h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"></path></svg>
+                </button>
                 <button class="icon-btn" id="themeToggle" title="切换暗黑/明亮主题">
                     <svg id="themeIcon" class="svg-icon" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
                 </button>
@@ -1528,6 +1541,27 @@ def build_codex_style_html(daily, total):
 
         renderTrendChart();
 
+        // Pin Window Toggle (Keep open on blur vs auto-close)
+        const pinBtn = document.getElementById('pinToggle');
+        let isPinned = localStorage.getItem('windowPinned') === 'true';
+
+        function updatePinDisplay() {{
+            if (isPinned) {{
+                pinBtn.classList.add('active');
+                pinBtn.title = "已固定窗口 (点击恢复点击外部自动关闭)";
+            }} else {{
+                pinBtn.classList.remove('active');
+                pinBtn.title = "固定窗口 (点击后失焦不关闭)";
+            }}
+        }}
+        updatePinDisplay();
+
+        pinBtn.addEventListener('click', () => {{
+            isPinned = !isPinned;
+            localStorage.setItem('windowPinned', isPinned ? 'true' : 'false');
+            updatePinDisplay();
+        }});
+
         // Close window when clicking outside (on blur)
         let closeOnBlurArmed = false;
         setTimeout(() => {{
@@ -1535,7 +1569,7 @@ def build_codex_style_html(daily, total):
         }}, 600);
 
         window.addEventListener('blur', () => {{
-            if (closeOnBlurArmed) {{
+            if (!isPinned && closeOnBlurArmed) {{
                 try {{
                     window.close();
                 }} catch (e) {{}}
